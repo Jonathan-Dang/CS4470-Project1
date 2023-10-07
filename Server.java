@@ -11,6 +11,7 @@ import java.util.concurrent.Executors;
 public class Server {
 
     static ServerSocket serverSocket;
+    static List<Socket> clientSockets;
     public static void main(String[] args) {
         // The number of command arguments only can be one
         if (args.length != 1) {
@@ -36,7 +37,7 @@ public class Server {
             // Setting up server and client sockets
             Server.serverSocket = new ServerSocket(port);
             System.out.println("Server running on port " + port);
-            List<Socket> clientSockets = new ArrayList<>();
+            clientSockets = new ArrayList<>();
 
             // Executor service for handling client connections
             ExecutorService executorService = Executors.newCachedThreadPool();
@@ -62,7 +63,7 @@ public class Server {
 
     }
 
-    private static void handleClient(Socket clientSocket) throws IOException {
+    private static synchronized void handleClient(Socket clientSocket) throws IOException {
         try (InputStream input = clientSocket.getInputStream();
                 OutputStream output = clientSocket.getOutputStream()) {
 
@@ -84,7 +85,7 @@ public class Server {
         }
     }
 
-    private static void userCommand(String command) {
+    private static synchronized void userCommand(String command) {
         String[] parts = command.split(" ");
         String cmd = parts[0].toLowerCase();
 
