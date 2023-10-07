@@ -9,6 +9,8 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 public class Server {
+
+    static ServerSocket serverSocket;
     public static void main(String[] args) {
         // The number of command arguments only can be one
         if (args.length != 1) {
@@ -32,7 +34,7 @@ public class Server {
             userInputThread.start();
 
             // Setting up server and client sockets
-            ServerSocket serverSocket = new ServerSocket(port);
+            Server.serverSocket = new ServerSocket(port);
             System.out.println("Server running on port " + port);
             List<Socket> clientSockets = new ArrayList<>();
 
@@ -114,7 +116,7 @@ public class Server {
 
             case "myport":
                 // Display the port number that the process runs on 
-                System.out.println("testing");
+                System.out.println("My Port: " + Server.serverSocket.getLocalPort());
                 break;
 
             case "connect":
