@@ -14,7 +14,7 @@ public class Server {
     public static void main(String[] args) {
         // The number of command arguments only can be one
         if (args.length != 1) {
-            System.out.println("\nUsage: java -cp bin Server <port>\n");
+            System.out.println("\nUsage: java Server <port>\n");
             System.exit(1);
         }
         int port = Integer.parseInt(args[0]);
