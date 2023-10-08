@@ -14,7 +14,7 @@ public class Server {
     public static void main(String[] args) {
         // The number of command arguments only can be one
         if (args.length != 1) {
-            System.out.println("\nUsage: java Server <port>\n");
+            System.out.println("\n  Usage: java -cp bin Server <port>\n");
             System.exit(1);
         }
         int port = Integer.parseInt(args[0]);
@@ -34,7 +34,7 @@ public class Server {
             // Setting up server and client sockets
             serverSocket = new ServerSocket(port);
             clientSockets = new ArrayList<>();
-            System.out.println("\nServer running on port " + port + "\n");
+            System.out.println("\n  Server running on port " + port + "\n");
 
             // Executor service for handling client connections
             ExecutorService executorService = Executors.newCachedThreadPool();
@@ -42,7 +42,7 @@ public class Server {
             while (active) {
                 Socket clientSocket = serverSocket.accept();
                 clientSockets.add(clientSocket);
-                System.out.println("\nPeer " + clientSocket.getRemoteSocketAddress() + " connected.\n");
+                System.out.println("\n  Peer " + clientSocket.getRemoteSocketAddress() + " connected.\n");
 
                 // Handle client connection
                 executorService.execute(() -> {
@@ -69,14 +69,14 @@ public class Server {
                 int bytesRead = input.read(buffer);
                 if (bytesRead == -1) {
                     // If peer disconnects
-                    System.out.println("\nPeer " + clientSocket.getRemoteSocketAddress() + " disconnected.\n");
+                    System.out.println("\n  Peer " + clientSocket.getRemoteSocketAddress() + " disconnected.\n");
                     break;
                 }
 
                 // If peer sends a message
                 String message = new String(buffer, 0, bytesRead);
                 System.out
-                        .println("\nMessage received from " + clientSocket.getRemoteSocketAddress() + ": " + message
+                        .println("\n  Message received from " + clientSocket.getRemoteSocketAddress() + ": " + message
                                 + "\n");
             }
         } finally {
@@ -97,15 +97,15 @@ public class Server {
             case "myip":
                 String ipAddress = getMyIPAddress();
                 if (ipAddress != null) {
-                    System.out.println("\nThe IP address is " + ipAddress + "\n");
+                    System.out.println("\n  The IP address is " + ipAddress + "\n");
                 } else {
-                    System.out.println("\nError: Unable to retrieve the IP address.\n");
+                    System.out.println("\n  Error: Unable to retrieve the IP address.\n");
                 }
                 break;
 
             case "myport":
                 // Display the port number that the process runs on
-                System.out.println("\nThe program runs on port number " + Server.serverSocket.getLocalPort() + "\n");
+                System.out.println("\n  The program runs on port number " + Server.serverSocket.getLocalPort() + "\n");
                 break;
 
             case "connect":
@@ -115,7 +115,7 @@ public class Server {
                     int destinationPort = Integer.parseInt(parts[2]);
                     connectToDestination(destination, destinationPort);
                 } else {
-                    System.out.println("\nUsage: connect <destination> <port>\n");
+                    System.out.println("\n  Usage: connect <destination> <port>\n");
                 }
                 break;
 
@@ -124,7 +124,7 @@ public class Server {
                 break;
 
             default:
-                System.out.println("\nUnknown command: " + cmd + "\n");
+                System.out.println("\n  Unknown command: " + cmd + "\n");
                 break;
         }
     }
@@ -165,35 +165,35 @@ public class Server {
 
             // Check if destination ip is a valid
             if (!isValid(destination)) {
-                System.out.println("\nError: Invalid IP address.\n");
+                System.out.println("\n  Error: Invalid IP address.\n");
                 return;
             }
 
             // Check if port number is in range
             if (port < 0 || port > 65353) {
-                System.out.println("\nError: Invalid port number.\n");
+                System.out.println("\n  Error: Invalid port number.\n");
                 return;
             }
 
             // Check for self-connections
             String myIPAddress = getMyIPAddress();
             if (destination.equals(myIPAddress) && port == Server.serverSocket.getLocalPort()) {
-                System.out.println("\nError: Cannot connect to your own IP address with the same port.\n");
+                System.out.println("\n  Error: Cannot connect to your own IP address with the same port.\n");
                 return;
             }
 
             // Check for duplicate connections
             if (isDuplicate(destination, port)) {
-                System.out.println("\nError: Already connected to " + destination + " on port " + port + ".\n");
+                System.out.println("\n  Error: Already connected to " + destination + " on port " + port + ".\n");
                 return;
             }
 
             Socket socket = new Socket(destination, port);
             clientSockets.add(socket);
-            System.out.println("\nThe connection to peer connected to " + destination + " on port " + port
+            System.out.println("\n  The connection to peer connected to " + destination + " on port " + port
                     + "is successfully established\n");
         } catch (IOException e) {
-            System.out.println("\nConnection to peer " + destination + " on port " + port + " failed.\n");
+            System.out.println("\n  Connection to peer " + destination + " on port " + port + " failed.\n");
         }
     }
 
