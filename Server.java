@@ -12,6 +12,7 @@ public class Server {
 
     static ServerSocket serverSocket;
     static List<Socket> clientSockets;
+    static boolean active;
     public static void main(String[] args) {
         // The number of command arguments only can be one
         if (args.length != 1) {
@@ -20,13 +21,13 @@ public class Server {
         }
 
         int port = Integer.parseInt(args[0]);
-        boolean active = true;
+        active = true;
 
         try {
             // Scanner for reading user commands
             Thread userInputThread = new Thread(() -> {
                 Scanner scanner = new Scanner(System.in);
-                while (true) {
+                while (Server.active) {
                     String userInput = scanner.nextLine().trim();
                     // Process user command
                     userCommand(userInput);
@@ -42,7 +43,7 @@ public class Server {
             // Executor service for handling client connections
             ExecutorService executorService = Executors.newCachedThreadPool();
 
-            while (active) {
+            while (Server.active) {
                 Socket clientSocket = serverSocket.accept();
                 clientSockets.add(clientSocket);
                 System.out.println("Peer " + clientSocket.getRemoteSocketAddress() + " connected.");
@@ -85,6 +86,10 @@ public class Server {
         }
     }
 
+    private static synchronized void terminateConnection(){
+        //TODO: This function can be used individually but will be called in exit. 
+    }
+
     private static synchronized void userCommand(String command) {
         String[] parts = command.split(" ");
         String cmd = parts[0].toLowerCase();
@@ -120,12 +125,22 @@ public class Server {
                 System.out.println("My Port: " + Server.serverSocket.getLocalPort());
                 break;
 
+            case "list":
+                int id = 1;
+                System.out.println("ID: Ip Address             Ports");
+                for (Socket s : Server.clientSockets)
+                {
+                    System.out.println(id++ + ": " + s.getLocalPort() + "            " + s.getPort());
+                }
+                break;
+
             case "connect":
                 // Implement connect command
                 System.out.println("testing");
                 break;
 
             case "exit":
+                Server.active = false;
                 System.out.println("Exiting");
                 break;
 
