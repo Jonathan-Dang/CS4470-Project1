@@ -1,4 +1,3 @@
-import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -43,7 +42,7 @@ public class Server {
 
             while (active) {
                 Socket clientSocket = serverSocket.accept();
-                clientSockets.add(clientSocket);
+                Server.clientSockets.add(clientSocket);
                 System.out.println("\n  Peer " + clientSocket.getRemoteSocketAddress() + " connected.\n");
 
                 // Handle client connection
@@ -52,6 +51,9 @@ public class Server {
                         handleClient(clientSocket);
                     } catch (IOException e) {
                         e.printStackTrace();
+                    } finally {
+                        //How do i remove our current socket lmao
+                        Server.clientSockets.remove(clientSocket);
                     }
                 });
             }
@@ -79,6 +81,12 @@ public class Server {
 
                     // If peer sends a message
                     String message = new String(buffer, 0, bytesRead);
+                    if(message.equals("~~disconnect"))
+                    {
+                        System.out.println("\n  Peer " + clientSocket.getRemoteSocketAddress() + " disconnected.\n");
+                        break;
+                    }
+                    else
                     System.out.println(
                             "\n  Message received from " + clientSocket.getRemoteSocketAddress() + ": " + message
                                     + "\n");
@@ -145,10 +153,45 @@ public class Server {
                 if (parts.length == 3) {
                     int idSocket = Integer.parseInt(parts[1]);
                     String message = parts[2];
+                    if (idSocket - 1 > Server.clientSockets.size())
+                    {
+                        System.out.println("\n Error: Invalid Socket ID \n");
+                        break;
+                    }
                     sendMessage(idSocket, message);
                 } else {
                     System.out.println("\n  Usage: send <id> <message>\n");
                 }
+                break;
+
+            case "terminate":
+                if(parts.length == 2)
+                {
+                    int idSocket = Integer.parseInt(parts[1]);
+                    if (idSocket - 1 > Server.clientSockets.size())
+                    {
+                        System.out.println("\n Error: Invalid Socket ID \n");
+                        break;
+                    }
+                    //Step 1: Send message to disconnect from other party
+                    //Step 2: Make other socket remove our socket from list
+                    //Step 3: Disconnect from socket at local end
+                    //Step 4: Clear associated socket
+                    String disconnectCmd = "~~disconnect";
+                    sendMessage(idSocket, disconnectCmd);
+                    Socket disconnect = Server.clientSockets.get(idSocket-1);
+                    try {
+                        disconnect.close();
+                        Server.clientSockets.remove(idSocket-1);
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                }
+                else
+                {
+                    System.out.println("\n Usage: terminate <id>\n");
+                }
+                
                 break;
 
             case "exit":
@@ -223,7 +266,7 @@ public class Server {
             Socket socket = new Socket(destination, port);
             clientSockets.add(socket);
             System.out.println("\n  The connection to peer connected to " + destination + " on port " + port
-                    + "is successfully established\n");
+                    + " is successfully established\n");
         } catch (IOException e) {
             System.out.println("\n  Connection to peer " + destination + " on port " + port + " failed.\n");
         }
@@ -255,7 +298,6 @@ public class Server {
         try {
             OutputStream outs = reciever.getOutputStream();
             outs.write(Message.getBytes());
-            outs.write("\r\n".getBytes());
             outs.flush();
         } catch (IOException e) {
             e.printStackTrace();
