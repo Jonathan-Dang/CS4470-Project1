@@ -97,6 +97,14 @@ public class Server {
                 }
                 break;
 
+            case "list":
+                int id = 1;
+                System.out.println("ID: Ip-Address:Port");
+                for (Socket s : Server.clientSockets) {
+                    System.out.println(id++ + " " + s.getRemoteSocketAddress());
+                }
+                break;
+
             case "myport":
                 // Display the port number that the process runs on
                 System.out.println("\n  The program runs on port number " + Server.serverSocket.getLocalPort() + "\n");
