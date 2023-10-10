@@ -1,3 +1,4 @@
+import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -141,12 +142,12 @@ public class Server {
             
             case "send":
                 // Implement connect command
-                if (parts.length == 4) {
-                    String destination = parts[1];
-                    int destinationPort = Integer.parseInt(parts[2]);
-                    String message = parts[3];
+                if (parts.length == 3) {
+                    int idSocket = Integer.parseInt(parts[1]);
+                    String message = parts[2];
+                    sendMessage(idSocket, message);
                 } else {
-                    System.out.println("\n  Usage: connect <destination> <port> <message>\n");
+                    System.out.println("\n  Usage: send <id> <message>\n");
                 }
                 break;
 
@@ -248,9 +249,17 @@ public class Server {
         return false;
     }
 
-    private static void sendMessage(int id)
+    private static void sendMessage(int id, String Message)
     {
-        //
+        Socket reciever = Server.clientSockets.get(id-1);
+        try {
+            OutputStream outs = reciever.getOutputStream();
+            outs.write(Message.getBytes());
+            outs.write("\r\n".getBytes());
+            outs.flush();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
     private static synchronized void terminateConnection() {
