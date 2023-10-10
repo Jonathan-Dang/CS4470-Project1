@@ -3,8 +3,6 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.*;
 import java.util.*;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 
 public class Server {
     private static ServerSocket serverSocket;
@@ -36,22 +34,13 @@ public class Server {
             clientSockets = new ArrayList<>();
             System.out.println("\n  Server running on port " + port + "\n");
 
-            // Executor service for handling client connections
-            ExecutorService executorService = Executors.newCachedThreadPool();
-
             while (active) {
                 Socket clientSocket = serverSocket.accept();
                 clientSockets.add(clientSocket);
                 System.out.println("\n  Peer " + clientSocket.getRemoteSocketAddress() + " connected.\n");
 
-                // Handle client connection
-                executorService.execute(() -> {
-                    try {
-                        handleClient(clientSocket);
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                    }
-                });
+                // Handle client connections
+                handleClient(clientSocket);
             }
             serverSocket.close();
         } catch (Exception e) {
@@ -61,27 +50,32 @@ public class Server {
     }
 
     private static synchronized void handleClient(Socket clientSocket) throws IOException {
-        try (InputStream input = clientSocket.getInputStream();
-                OutputStream output = clientSocket.getOutputStream()) {
 
-            byte[] buffer = new byte[1024];
-            while (true) {
-                int bytesRead = input.read(buffer);
-                if (bytesRead == -1) {
-                    // If peer disconnects
-                    System.out.println("\n  Peer " + clientSocket.getRemoteSocketAddress() + " disconnected.\n");
-                    break;
+        Thread clientThread = new Thread(() -> {
+            try (InputStream input = clientSocket.getInputStream();
+                    OutputStream output = clientSocket.getOutputStream()) {
+
+                byte[] buffer = new byte[1024];
+                while (true) {
+                    int bytesRead = input.read(buffer);
+                    if (bytesRead == -1) {
+                        // If peer disconnects
+                        System.out.println("\n  Peer " + clientSocket.getRemoteSocketAddress() + " disconnected.\n");
+                        break;
+                    }
+
+                    // If peer sends a message
+                    String message = new String(buffer, 0, bytesRead);
+                    System.out.println(
+                            "\n  Message received from " + clientSocket.getRemoteSocketAddress() + ": " + message
+                                    + "\n");
                 }
-
-                // If peer sends a message
-                String message = new String(buffer, 0, bytesRead);
-                System.out
-                        .println("\n  Message received from " + clientSocket.getRemoteSocketAddress() + ": " + message
-                                + "\n");
+            } catch (IOException e) {
+                e.printStackTrace();
             }
-        } finally {
-            clientSocket.close();
-        }
+        });
+
+        clientThread.start();
     }
 
     private static synchronized void userCommand(String command) {
