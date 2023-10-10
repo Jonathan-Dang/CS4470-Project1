@@ -24,10 +24,12 @@ public class Server {
             // Scanner for reading user commands
             Thread userInputThread = new Thread(() -> {
                 Scanner scanner = new Scanner(System.in);
-                while (active) {
+                while (Server.active) {
                     String userInput = scanner.nextLine().trim();
                     userCommand(userInput);
                 }
+                
+                System.out.println("Exiting from UserInput");
                 scanner.close();
             });
             userInputThread.start();
@@ -40,7 +42,7 @@ public class Server {
             // Executor service for handling client connections
             ExecutorService executorService = Executors.newCachedThreadPool();
 
-            while (active) {
+            while (Server.active) {
                 Socket clientSocket = serverSocket.accept();
                 Server.clientSockets.add(clientSocket);
                 System.out.println("\n  Peer " + clientSocket.getRemoteSocketAddress() + " connected.\n");
@@ -51,17 +53,16 @@ public class Server {
                         handleClient(clientSocket);
                     } catch (IOException e) {
                         e.printStackTrace();
-                    } finally {
-                        //How do i remove our current socket lmao
-                        Server.clientSockets.remove(clientSocket);
                     }
                 });
             }
+            
+            System.out.println("Exiting from Server Socket");
             serverSocket.close();
         } catch (Exception e) {
             e.printStackTrace();
         }
-
+        return;
     }
 
     private static synchronized void handleClient(Socket clientSocket) throws IOException {
@@ -96,6 +97,7 @@ public class Server {
             } finally {
                 try {
                     clientSocket.close();
+                    Server.clientSockets.remove(clientSocket);
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
@@ -177,15 +179,7 @@ public class Server {
                     //Step 2: Make other socket remove our socket from list
                     //Step 3: Disconnect from socket at local end
                     //Step 4: Clear associated socket
-                    String disconnectCmd = "~~disconnect";
-                    sendMessage(idSocket, disconnectCmd);
-                    Socket disconnect = Server.clientSockets.get(idSocket-1);
-                    try {
-                        disconnect.close();
-                        Server.clientSockets.remove(idSocket-1);
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                    }
+                    terminateConnection(idSocket);
                 }
                 else
                 {
@@ -195,7 +189,12 @@ public class Server {
                 break;
 
             case "exit":
-                System.out.println("Exiting");
+                for (int i = 1; i <= Server.clientSockets.size(); i++)
+                {
+                    terminateConnection(i);
+                }
+                //How tf do I close local?
+                Server.active = false;
                 break;
 
             default:
@@ -304,7 +303,15 @@ public class Server {
         }
     }
 
-    private static synchronized void terminateConnection() {
-        // TODO: This function can be used individually but will be called in exit.
+    private static synchronized void terminateConnection(int id) {
+        String disconnectCmd = "~~disconnect";
+        sendMessage(id, disconnectCmd);
+        Socket disconnect = Server.clientSockets.get(id-1);
+        try {
+            disconnect.close();
+            Server.clientSockets.remove(id-1);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 }
