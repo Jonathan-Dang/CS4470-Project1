@@ -43,22 +43,32 @@ public class Server {
             ExecutorService executorService = Executors.newCachedThreadPool();
 
             while (Server.active) {
-                Socket clientSocket = serverSocket.accept();
-                Server.clientSockets.add(clientSocket);
-                System.out.println("\n  Peer " + clientSocket.getRemoteSocketAddress() + " connected.\n");
 
-                // Handle client connection
-                executorService.execute(() -> {
-                    try {
-                        handleClient(clientSocket);
-                    } catch (IOException e) {
-                        e.printStackTrace();
+                try {
+                    Socket clientSocket = serverSocket.accept();
+                    Server.clientSockets.add(clientSocket);
+                    System.out.println("\n  Peer " + clientSocket.getRemoteSocketAddress() + " connected.\n");
+
+                    // Handle client connection
+                    executorService.execute(() -> {
+                        try {
+                            handleClient(clientSocket);
+                        } catch (IOException e) {
+                            e.printStackTrace();
+                        }
+                    });
+                } catch (SocketException e) {
+                    if (!Server.active)
+                    {
+                        executorService.shutdownNow();
+                        break;
                     }
-                });
+                    else
+                        e.printStackTrace();
+                }
             }
             
             System.out.println("Exiting from Server Socket");
-            serverSocket.close();
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -195,6 +205,12 @@ public class Server {
                 }
                 //How tf do I close local?
                 Server.active = false;
+                try {
+                    Server.serverSocket.close();
+                } catch (IOException e) {
+                    // TODO Auto-generated catch block
+                    e.printStackTrace();
+                }
                 break;
 
             default:
