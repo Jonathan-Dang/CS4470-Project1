@@ -28,6 +28,7 @@ public class Server {
                     String userInput = scanner.nextLine().trim();
                     userCommand(userInput);
                 }
+                scanner.close();
             });
             userInputThread.start();
 
@@ -61,27 +62,37 @@ public class Server {
     }
 
     private static synchronized void handleClient(Socket clientSocket) throws IOException {
-        try (InputStream input = clientSocket.getInputStream();
-                OutputStream output = clientSocket.getOutputStream()) {
 
-            byte[] buffer = new byte[1024];
-            while (true) {
-                int bytesRead = input.read(buffer);
-                if (bytesRead == -1) {
-                    // If peer disconnects
-                    System.out.println("\n  Peer " + clientSocket.getRemoteSocketAddress() + " disconnected.\n");
-                    break;
+        Thread clientThread = new Thread(() -> {
+            try (InputStream input = clientSocket.getInputStream();
+                    OutputStream output = clientSocket.getOutputStream()) {
+
+                byte[] buffer = new byte[1024];
+                while (true) {
+                    int bytesRead = input.read(buffer);
+                    if (bytesRead == -1) {
+                        // If peer disconnects
+                        System.out.println("\n  Peer " + clientSocket.getRemoteSocketAddress() + " disconnected.\n");
+                        break;
+                    }
+
+                    // If peer sends a message
+                    String message = new String(buffer, 0, bytesRead);
+                    System.out.println(
+                            "\n  Message received from " + clientSocket.getRemoteSocketAddress() + ": " + message
+                                    + "\n");
                 }
-
-                // If peer sends a message
-                String message = new String(buffer, 0, bytesRead);
-                System.out
-                        .println("\n  Message received from " + clientSocket.getRemoteSocketAddress() + ": " + message
-                                + "\n");
+            } catch (IOException e) {
+                e.printStackTrace();
+            } finally {
+                try {
+                    clientSocket.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
             }
-        } finally {
-            clientSocket.close();
-        }
+        });
+        clientThread.start();
     }
 
     private static synchronized void userCommand(String command) {
@@ -103,6 +114,15 @@ public class Server {
                 }
                 break;
 
+            case "list":
+                int id = 1;
+                System.out.println("ID: Ip-Address:Port");
+                for (Socket s : Server.clientSockets)
+                {
+                    System.out.println(id++ + " " + s.getRemoteSocketAddress());
+                }
+                break;
+
             case "myport":
                 // Display the port number that the process runs on
                 System.out.println("\n  The program runs on port number " + Server.serverSocket.getLocalPort() + "\n");
@@ -116,6 +136,17 @@ public class Server {
                     connectToDestination(destination, destinationPort);
                 } else {
                     System.out.println("\n  Usage: connect <destination> <port>\n");
+                }
+                break;
+            
+            case "send":
+                // Implement connect command
+                if (parts.length == 4) {
+                    String destination = parts[1];
+                    int destinationPort = Integer.parseInt(parts[2]);
+                    String message = parts[3];
+                } else {
+                    System.out.println("\n  Usage: connect <destination> <port> <message>\n");
                 }
                 break;
 
@@ -215,6 +246,11 @@ public class Server {
             }
         }
         return false;
+    }
+
+    private static void sendMessage(int id)
+    {
+        //
     }
 
     private static synchronized void terminateConnection() {
