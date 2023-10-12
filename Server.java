@@ -107,11 +107,11 @@ public class Server {
                                     .println("\n  Peer " + clientSocket.getInetAddress().getHostAddress() + " "
                                             + clientPort + " disconnected. [DISCONNECT]\n");
 
+                            clientSocket.close();
+                            Server.clientPortsMap.remove(clientSocket);
                             Socket servSocket = findServerSocket(clientSocket, clientListeningPort);
                             servSocket.close();
                             Server.serverPortsMap.remove(servSocket);
-                            clientSocket.close();
-                            Server.clientPortsMap.remove(clientSocket);
                             break;
                             //TODO: Why does it throw exception :^(
                         } else
@@ -123,15 +123,10 @@ public class Server {
                         System.out.println(
                                 "\n  Peer " + clientSocket.getInetAddress().getHostAddress() + " "
                                         + clientPort + " disconnected abruptly.\n");
-
-                        Socket servSocket = findServerSocket(clientSocket, clientListeningPort);
-                        servSocket.close();
-                        serverPortsMap.remove(servSocket);                
+                                                     
                         clientSocket.close();
                         clientPortsMap.remove(clientSocket);
                         break;
-                    } catch (IOException e) {
-                        e.printStackTrace();
                     }
                 }
             } catch (IOException e) {
@@ -224,7 +219,7 @@ public class Server {
             case "exit":
                 // terminate connecion for each client and server
                 //TODO: Fix terminate to complete exit
-                /*Set<Socket> clientSockets = new HashSet<>(clientPortsMap.keySet());
+                /*
                 for (Socket socket : clientSockets) {
                     terminateConnection(socket);
                 }
@@ -232,6 +227,16 @@ public class Server {
                 for (Socket socket : serverSockets) {
                     terminateConnection(socket);
                 }*/
+                
+                List<Socket> clientSocketList = new ArrayList<>(clientPortsMap.keySet());
+                List<Socket> serverSocketList = new ArrayList<>(serverPortsMap.keySet());
+                Socket temp[] = new Socket[2];
+                for (int i = 0; i < clientSocketList.size(); i++)
+                {
+                    temp[0] = clientSocketList.get(i);
+                    temp[1] = serverSocketList.get(i);
+                    terminateConnection(temp);
+                }
 
                 Server.active = false;
                 try {
