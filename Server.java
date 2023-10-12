@@ -102,10 +102,14 @@ public class Server {
                             System.out
                                     .println("\n  Peer " + clientSocket.getInetAddress().getHostAddress() + " "
                                             + clientPort + " disconnected. [DISCONNECT]\n");
-                            sendMessage(clientSocket, "Hello!");
+
+                            Socket servSocket = findServerSocket(clientSocket, clientListeningPort);
+                            servSocket.close();
+                            Server.serverPortsMap.remove(servSocket);
                             clientSocket.close();
-                            clientPortsMap.remove(clientSocket);
+                            Server.clientPortsMap.remove(clientSocket);
                             break;
+                            //TODO: Why does it throw exception :^(
                         } else
                             System.out.println(
                                     "\n  Message received from " + clientSocket.getInetAddress().getHostAddress() + " "
@@ -152,8 +156,13 @@ public class Server {
             case "list":
                 int id = 1;
                 System.out.println("\n ID: IP Address       Port No.");
+                System.out.println("DEBUG:CLIENTS");
                 // display connected clients
                 for (Socket s : clientPortsMap.keySet()) {
+                    displayConnectionDetails(s, id++);
+                }
+                System.out.println("DEBUG:SERVERS");
+                for (Socket s : serverPortsMap.keySet()) {
                     displayConnectionDetails(s, id++);
                 }
 
@@ -386,6 +395,19 @@ public class Server {
             clientPortsMap.remove(socketToTerminate[0]);
             serverPortsMap.remove(socketToTerminate[1]);
         }
+    }
+
+    private static Socket findServerSocket(Socket clientSocket, int port){
+        List<Socket> serverSocketList = new ArrayList<>(serverPortsMap.keySet());
+        for (Socket ss : serverSocketList)
+        {
+            if (clientSocket.getInetAddress().getHostAddress().equals(ss.getInetAddress().getHostAddress())
+                && Server.serverPortsMap.get(ss) == port)
+            {
+                return ss;
+            }
+        }
+        return null;
     }
 
     private static void sendMessage(Socket receiver, String message) {
