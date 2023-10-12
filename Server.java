@@ -46,7 +46,6 @@ public class Server {
                     System.out.println("\n  Peer " + clientSocket.getInetAddress().getHostAddress() + " connected.\n");
                     handleClient(clientSocket);
 
-
                 } catch (SocketException e) {
                     if (!Server.active) {
                         break;
@@ -66,7 +65,8 @@ public class Server {
     private static synchronized void handleClient(Socket clientSocket) throws IOException {
 
         Thread clientThread = new Thread(() -> {
-            try (InputStream input = clientSocket.getInputStream();OutputStream output = clientSocket.getOutputStream()) {
+            try (InputStream input = clientSocket.getInputStream();
+                    OutputStream output = clientSocket.getOutputStream()) {
 
                 byte[] buffer = new byte[1024];
 
@@ -79,8 +79,9 @@ public class Server {
                 clientPortsMap.put(clientSocket, clientListeningPort);
                 Integer clientPort = clientPortsMap.get(clientSocket);
 
-                //Use an unsafe connection method since we know that the initial connection is safe
-                if(!isDuplicateServer(clientSocket.getInetAddress().getHostAddress(), clientListeningPort))
+                // Use an unsafe connection method since we know that the initial connection is
+                // safe
+                if (!isDuplicateServer(clientSocket.getInetAddress().getHostAddress(), clientListeningPort))
                     unsafeConnect(clientSocket.getInetAddress().getHostAddress(), clientListeningPort);
 
                 while (true) {
@@ -102,10 +103,14 @@ public class Server {
                             System.out
                                     .println("\n  Peer " + clientSocket.getInetAddress().getHostAddress() + " "
                                             + clientPort + " disconnected. [DISCONNECT]\n");
-                            sendMessage(clientSocket, "Hello!");
+
+                            Socket servSocket = findServerSocket(clientSocket, clientListeningPort);
+                            servSocket.close();
+                            Server.serverPortsMap.remove(servSocket);
                             clientSocket.close();
-                            clientPortsMap.remove(clientSocket);
+                            Server.clientPortsMap.remove(clientSocket);
                             break;
+                            // TODO: Why does it throw exception :^(
                         } else
                             System.out.println(
                                     "\n  Message received from " + clientSocket.getInetAddress().getHostAddress() + " "
@@ -152,17 +157,16 @@ public class Server {
             case "list":
                 int id = 1;
                 System.out.println("\n ID: IP Address       Port No.");
+                System.out.println("DEBUG:CLIENTS");
                 // display connected clients
-                System.out.println("[DEBUG]: Clients");
                 for (Socket s : clientPortsMap.keySet()) {
                     displayConnectionDetails(s, id++);
                 }
-                System.out.println("[DEBUG]: Servers");
-
-                // display connected servers
+                System.out.println("DEBUG:SERVERS");
                 for (Socket s : serverPortsMap.keySet()) {
                     displayConnectionDetails(s, id++);
                 }
+
                 System.out.println();
                 break;
 
@@ -188,7 +192,7 @@ public class Server {
                     // Step 2: Make other socket remove our socket from list
                     // Step 3: Disconnect from socket at local end
                     // Step 4: Clear associated socket
-                    Socket socketToTerminate = getSocketFromId(parts[1]);
+                    Socket socketToTerminate[] = getSocketFromId(parts[1]);
                     if (socketToTerminate != null) {
                         terminateConnection(socketToTerminate);
                     }
@@ -200,10 +204,10 @@ public class Server {
             case "send":
                 // Implement connect command
                 if (parts.length == 3) {
-                    Socket receiver = getSocketFromId(parts[1]);
+                    Socket receiver[] = getSocketFromId(parts[1]);
                     if (receiver != null) {
                         String message = parts[2];
-                        sendMessage(receiver, message);
+                        sendMessage(receiver[1], message);
                     }
                 } else {
                     System.out.println("\n  Usage: send <id> <message>\n");
@@ -212,14 +216,17 @@ public class Server {
 
             case "exit":
                 // terminate connecion for each client and server
-                Set<Socket> clientSockets = new HashSet<>(clientPortsMap.keySet());
-                for (Socket socket : clientSockets) {
-                    terminateConnection(socket);
-                }
-                Set<Socket> serverSockets = new HashSet<>(serverPortsMap.keySet());
-                for (Socket socket : serverSockets) {
-                    terminateConnection(socket);
-                }
+                // TODO: Fix terminate to complete exit
+                /*
+                 * Set<Socket> clientSockets = new HashSet<>(clientPortsMap.keySet());
+                 * for (Socket socket : clientSockets) {
+                 * terminateConnection(socket);
+                 * }
+                 * Set<Socket> serverSockets = new HashSet<>(serverPortsMap.keySet());
+                 * for (Socket socket : serverSockets) {
+                 * terminateConnection(socket);
+                 * }
+                 */
 
                 Server.active = false;
                 try {
@@ -292,7 +299,7 @@ public class Server {
         }
     }
 
-    private static void unsafeConnect(String destination, int port){
+    private static void unsafeConnect(String destination, int port) {
         try {
             Socket socket = new Socket(destination, port);
             serverPortsMap.put(socket, port);
@@ -371,25 +378,37 @@ public class Server {
         return false;
     }
 
-    private static synchronized void terminateConnection(Socket socketToTerminate) {
+    private static synchronized void terminateConnection(Socket[] socketToTerminate) {
         // if socket exist in client list or server list
-        if (socketToTerminate == null || (!clientPortsMap.containsKey(socketToTerminate)
-                && !serverPortsMap.containsKey(socketToTerminate))) {
+        if (socketToTerminate == null || (!clientPortsMap.containsKey(socketToTerminate[0])
+                && !serverPortsMap.containsKey(socketToTerminate[1]))) {
             System.out.println("\n  Error: Invalid Socket.\n");
             return;
         }
 
         String disconnectCmd = "~~disconnect";
-        sendMessage(socketToTerminate, disconnectCmd);
+        sendMessage(socketToTerminate[1], disconnectCmd);
 
         try {
-            socketToTerminate.close();
+            socketToTerminate[0].close();
+            socketToTerminate[1].close();
         } catch (IOException e) {
             e.printStackTrace();
         } finally {
-            clientPortsMap.remove(socketToTerminate);
-            serverPortsMap.remove(socketToTerminate);
+            clientPortsMap.remove(socketToTerminate[0]);
+            serverPortsMap.remove(socketToTerminate[1]);
         }
+    }
+
+    private static Socket findServerSocket(Socket clientSocket, int port) {
+        List<Socket> serverSocketList = new ArrayList<>(serverPortsMap.keySet());
+        for (Socket ss : serverSocketList) {
+            if (clientSocket.getInetAddress().getHostAddress().equals(ss.getInetAddress().getHostAddress())
+                    && Server.serverPortsMap.get(ss) == port) {
+                return ss;
+            }
+        }
+        return null;
     }
 
     private static void sendMessage(Socket receiver, String message) {
@@ -408,7 +427,7 @@ public class Server {
         }
     }
 
-    private static Socket getSocketFromId(String idString) {
+    private static Socket[] getSocketFromId(String idString) {
         int id;
         try {
             id = Integer.parseInt(idString);
@@ -420,14 +439,17 @@ public class Server {
         List<Socket> clientSocketList = new ArrayList<>(clientPortsMap.keySet());
         List<Socket> serverSocketList = new ArrayList<>(serverPortsMap.keySet());
 
+        Socket ret[] = new Socket[2];
+
         if (id - 1 < 0 || id - clientSocketList.size() - 1 >= serverSocketList.size()) {
             System.out.println("\n Error: Invalid Socket ID \n");
             return null;
         } else if (id <= clientSocketList.size()) {
-            return clientSocketList.get(id - 1);
+            ret[0] = clientSocketList.get(id - 1);
+            ret[1] = serverSocketList.get(id - 1);
         }
 
-        return serverSocketList.get(id - clientSocketList.size() - 1);
+        return ret;
     }
 
     private static void displayConnectionDetails(Socket s, int id) {
