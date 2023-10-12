@@ -9,6 +9,7 @@ import java.util.concurrent.ConcurrentMap;
 public class Server {
     private static ServerSocket serverSocket;
     private static ConcurrentMap<Socket, Integer> clientPortsMap = new ConcurrentHashMap<>();
+    private static ConcurrentMap<Socket, Integer> serverPortsMap = new ConcurrentHashMap<>();
     private static boolean active = true;
     private static int serverPort;
 
@@ -63,16 +64,15 @@ public class Server {
     private static synchronized void handleClient(Socket clientSocket) throws IOException {
 
         Thread clientThread = new Thread(() -> {
-            try (InputStream input = clientSocket.getInputStream();
-                    OutputStream output = clientSocket.getOutputStream()) {
+            try (InputStream input = clientSocket.getInputStream();) {
 
                 byte[] buffer = new byte[1024];
 
                 // Reading initial message for client's listening port
                 int bytesRead = input.read(buffer);
-
                 String initialMessage = new String(buffer, 0, bytesRead);
                 int clientListeningPort = Integer.parseInt(initialMessage.trim());
+
                 // Store clientListeningPort associated with clientSocket
                 clientPortsMap.put(clientSocket, clientListeningPort);
                 Integer clientPort = clientPortsMap.get(clientSocket);
@@ -96,6 +96,8 @@ public class Server {
                             System.out
                                     .println("\n  Peer " + clientSocket.getInetAddress().getHostAddress() + " "
                                             + clientPort + " disconnected.\n");
+                            clientSocket.close();
+                            clientPortsMap.remove(clientSocket);
                             break;
                         } else
                             System.out.println(
@@ -106,6 +108,8 @@ public class Server {
                         System.out.println(
                                 "\n  Peer " + clientSocket.getInetAddress().getHostAddress() + " "
                                         + clientPort + " disconnected abruptly.\n");
+                        clientSocket.close();
+                        clientPortsMap.remove(clientSocket);
                         break;
                     } catch (IOException e) {
                         e.printStackTrace();
@@ -141,10 +145,13 @@ public class Server {
             case "list":
                 int id = 1;
                 System.out.println("\n ID: IP Address       Port No.");
+                // display connected clients
                 for (Socket s : clientPortsMap.keySet()) {
-                    String clientIpAddress = s.getInetAddress().getHostAddress();
-                    int clientListeningPort = clientPortsMap.get(s);
-                    System.out.printf(" %d: %s       %d%n", id++, clientIpAddress, clientListeningPort);
+                    displayConnectionDetails(s, id++);
+                }
+                // display connected servers
+                for (Socket s : serverPortsMap.keySet()) {
+                    displayConnectionDetails(s, id++);
                 }
                 System.out.println();
                 break;
@@ -194,10 +201,16 @@ public class Server {
                 break;
 
             case "exit":
-                Set<Socket> sockets = clientPortsMap.keySet();
-                for (Socket socket : sockets) {
+                // terminate connecion for each client and server
+                Set<Socket> clientSockets = new HashSet<>(clientPortsMap.keySet());
+                for (Socket socket : clientSockets) {
                     terminateConnection(socket);
                 }
+                Set<Socket> serverSockets = new HashSet<>(serverPortsMap.keySet());
+                for (Socket socket : serverSockets) {
+                    terminateConnection(socket);
+                }
+
                 Server.active = false;
                 try {
                     Server.serverSocket.close();
@@ -318,8 +331,9 @@ public class Server {
     }
 
     private static synchronized void terminateConnection(Socket socketToTerminate) {
-        // if id is out of bounds
-        if (socketToTerminate == null || !clientPortsMap.containsKey(socketToTerminate)) {
+        // if socket exist in client list or server list
+        if (socketToTerminate == null || (!clientPortsMap.containsKey(socketToTerminate)
+                && !serverPortsMap.containsKey(socketToTerminate))) {
             System.out.println("\n  Error: Invalid Socket.\n");
             return;
         }
@@ -337,7 +351,9 @@ public class Server {
     }
 
     private static void sendMessage(Socket receiver, String message) {
-        if (receiver == null || !clientPortsMap.containsKey(receiver)) {
+        // if receiver exist in client list or server list
+        if (receiver == null || (!clientPortsMap.containsKey(receiver)
+                && !serverPortsMap.containsKey(receiver))) {
             System.out.println("\n  Error: Invalid Socket.\n");
             return;
         }
@@ -360,12 +376,22 @@ public class Server {
             return null;
         }
 
-        List<Socket> socketList = new ArrayList<>(clientPortsMap.keySet());
-        if (id - 1 < 0 || id - 1 >= socketList.size()) {
+        List<Socket> clientSocketList = new ArrayList<>(clientPortsMap.keySet());
+        List<Socket> serverSocketList = new ArrayList<>(serverPortsMap.keySet());
+
+        if (id - 1 < 0 || id - clientSocketList.size() - 1 >= serverSocketList.size()) {
             System.out.println("\n Error: Invalid Socket ID \n");
             return null;
+        } else if (id <= clientSocketList.size()) {
+            return clientSocketList.get(id - 1);
         }
 
-        return socketList.get(id - 1);
+        return serverSocketList.get(id - clientSocketList.size() - 1);
+    }
+
+    private static void displayConnectionDetails(Socket s, int id) {
+        String clientIpAddress = s.getInetAddress().getHostAddress();
+        int clientListeningPort = clientPortsMap.getOrDefault(s, serverPortsMap.getOrDefault(s, -1));
+        System.out.printf(" %d: %s       %d%n", id, clientIpAddress, clientListeningPort);
     }
 }
