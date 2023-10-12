@@ -188,7 +188,7 @@ public class Server {
                     // Step 2: Make other socket remove our socket from list
                     // Step 3: Disconnect from socket at local end
                     // Step 4: Clear associated socket
-                    Socket socketToTerminate = getSocketFromId(parts[1]);
+                    Socket socketToTerminate[] = getSocketFromId(parts[1]);
                     if (socketToTerminate != null) {
                         terminateConnection(socketToTerminate);
                     }
@@ -200,10 +200,10 @@ public class Server {
             case "send":
                 // Implement connect command
                 if (parts.length == 3) {
-                    Socket receiver = getSocketFromId(parts[1]);
+                    Socket receiver[] = getSocketFromId(parts[1]);
                     if (receiver != null) {
                         String message = parts[2];
-                        sendMessage(receiver, message);
+                        sendMessage(receiver[1], message);
                     }
                 } else {
                     System.out.println("\n  Usage: send <id> <message>\n");
@@ -212,14 +212,15 @@ public class Server {
 
             case "exit":
                 // terminate connecion for each client and server
-                Set<Socket> clientSockets = new HashSet<>(clientPortsMap.keySet());
+                //TODO:
+                /*Set<Socket> clientSockets = new HashSet<>(clientPortsMap.keySet());
                 for (Socket socket : clientSockets) {
                     terminateConnection(socket);
                 }
                 Set<Socket> serverSockets = new HashSet<>(serverPortsMap.keySet());
                 for (Socket socket : serverSockets) {
                     terminateConnection(socket);
-                }
+                }*/
 
                 Server.active = false;
                 try {
@@ -371,24 +372,25 @@ public class Server {
         return false;
     }
 
-    private static synchronized void terminateConnection(Socket socketToTerminate) {
+    private static synchronized void terminateConnection(Socket[] socketToTerminate) {
         // if socket exist in client list or server list
-        if (socketToTerminate == null || (!clientPortsMap.containsKey(socketToTerminate)
-                && !serverPortsMap.containsKey(socketToTerminate))) {
+        if (socketToTerminate == null || (!clientPortsMap.containsKey(socketToTerminate[0])
+                && !serverPortsMap.containsKey(socketToTerminate[1]))) {
             System.out.println("\n  Error: Invalid Socket.\n");
             return;
         }
 
         String disconnectCmd = "~~disconnect";
-        sendMessage(socketToTerminate, disconnectCmd);
+        sendMessage(socketToTerminate[1], disconnectCmd);
 
         try {
-            socketToTerminate.close();
+            socketToTerminate[0].close();
+            socketToTerminate[1].close();
         } catch (IOException e) {
             e.printStackTrace();
         } finally {
-            clientPortsMap.remove(socketToTerminate);
-            serverPortsMap.remove(socketToTerminate);
+            clientPortsMap.remove(socketToTerminate[0]);
+            serverPortsMap.remove(socketToTerminate[1]);
         }
     }
 
@@ -408,7 +410,7 @@ public class Server {
         }
     }
 
-    private static Socket getSocketFromId(String idString) {
+    private static Socket[] getSocketFromId(String idString) {
         int id;
         try {
             id = Integer.parseInt(idString);
@@ -420,14 +422,17 @@ public class Server {
         List<Socket> clientSocketList = new ArrayList<>(clientPortsMap.keySet());
         List<Socket> serverSocketList = new ArrayList<>(serverPortsMap.keySet());
 
+        Socket ret[] = new Socket[2];
+
         if (id - 1 < 0 || id - clientSocketList.size() - 1 >= serverSocketList.size()) {
             System.out.println("\n Error: Invalid Socket ID \n");
             return null;
         } else if (id <= clientSocketList.size()) {
-            return clientSocketList.get(id - 1);
+            ret[0] = clientSocketList.get(id - 1);
+            ret[1] = serverSocketList.get(id - 1);
         }
 
-        return serverSocketList.get(id - clientSocketList.size() - 1);
+        return ret;
     }
 
     private static void displayConnectionDetails(Socket s, int id) {
