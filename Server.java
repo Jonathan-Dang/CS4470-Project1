@@ -153,16 +153,10 @@ public class Server {
                 int id = 1;
                 System.out.println("\n ID: IP Address       Port No.");
                 // display connected clients
-                System.out.println("[DEBUG]: Clients");
                 for (Socket s : clientPortsMap.keySet()) {
                     displayConnectionDetails(s, id++);
                 }
-                System.out.println("[DEBUG]: Servers");
 
-                // display connected servers
-                for (Socket s : serverPortsMap.keySet()) {
-                    displayConnectionDetails(s, id++);
-                }
                 System.out.println();
                 break;
 
@@ -212,7 +206,7 @@ public class Server {
 
             case "exit":
                 // terminate connecion for each client and server
-                //TODO:
+                //TODO: Fix terminate to complete exit
                 /*Set<Socket> clientSockets = new HashSet<>(clientPortsMap.keySet());
                 for (Socket socket : clientSockets) {
                     terminateConnection(socket);
