@@ -91,6 +91,10 @@ public class Server {
                             System.out
                                     .println("\n  Peer " + clientSocket.getInetAddress().getHostAddress() + " "
                                             + clientPort + " disconnected.\n");
+
+                            Socket servSocket = findServerSocket(clientSocket, clientListeningPort);
+                            servSocket.close();
+                            Server.serverPortsMap.remove(servSocket);
                             clientSocket.close();
                             clientPortsMap.remove(clientSocket);
                             break;
@@ -119,6 +123,10 @@ public class Server {
                         System.out.println(
                                 "\n  Peer " + clientSocket.getInetAddress().getHostAddress() + " "
                                         + clientPort + " disconnected abruptly.\n");
+
+                        Socket servSocket = findServerSocket(clientSocket, clientListeningPort);
+                        servSocket.close();
+                        serverPortsMap.remove(servSocket);                
                         clientSocket.close();
                         clientPortsMap.remove(clientSocket);
                         break;
