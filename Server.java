@@ -267,7 +267,7 @@ public class Server {
             }
 
             Socket socket = new Socket(destination, port);
-            clientPortsMap.put(socket, port);
+            serverPortsMap.put(socket, port);
 
             // send the server's listening port as the first message
             OutputStream outs = socket.getOutputStream();
