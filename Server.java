@@ -58,7 +58,7 @@ public class Server {
                     }
                 }
 
-                System.out.println("Exiting from Server Socket");
+                System.out.println("\n Exiting from Server Socket \n");
             } catch (BindException e) {
                 System.out.println("\n Error: Port " + port + " is already in use by another process.");
                 // Clear the args array so the usage message is shown again
@@ -67,7 +67,6 @@ public class Server {
                 e.printStackTrace();
             }
         }
-
     }
 
     private static synchronized void handleClient(Socket clientSocket) throws IOException {
@@ -95,11 +94,17 @@ public class Server {
                 while (true) {
                     try {
                         bytesRead = input.read(buffer);
-                        // if other peer terminated the connection
+                        // if peer exit without terminating the connection
                         if (bytesRead == -1) {
                             System.out
-                                    .println("\n Peer " + clientSocket.getInetAddress().getHostAddress() + " "
+                                    .println("\n  Peer " + clientSocket.getInetAddress().getHostAddress() + " "
                                             + clientPort + " disconnected.\n");
+
+                            Socket servSocket = findServerSocket(clientSocket, clientListeningPort);
+                            if (servSocket != null) {
+                                servSocket.close();
+                                Server.serverPortsMap.remove(servSocket);
+                            }
                             clientSocket.close();
                             clientPortsMap.remove(clientSocket);
                             break;
@@ -112,28 +117,25 @@ public class Server {
                                     .println("\n  Peer " + clientSocket.getInetAddress().getHostAddress() + " "
                                             + clientPort + " disconnected. [DISCONNECT]\n");
 
+                            clientSocket.close();
+                            clientPortsMap.remove(clientSocket);
                             Socket servSocket = findServerSocket(clientSocket, clientListeningPort);
                             servSocket.close();
                             Server.serverPortsMap.remove(servSocket);
-                            clientSocket.close();
-                            Server.clientPortsMap.remove(clientSocket);
                             break;
-                            // TODO: Why does it throw exception :^(
                         } else
                             System.out.println(
                                     "\n  Message received from " + clientSocket.getInetAddress().getHostAddress() + " "
                                             + clientPort + ": " + message + "\n");
                     } catch (SocketException e) {
-                        System.out.println("\n  Peer " + clientSocket.getInetAddress().getHostAddress()
-                                + " " + clientPort + " disconnected abruptly.\n");
-                        Socket servSocket = findServerSocket(clientSocket, clientListeningPort);
-                        servSocket.close();
-                        Server.serverPortsMap.remove(servSocket);
+                        // if peer close the program without sending any request
+                        System.out.println(
+                                "\n  Peer " + clientSocket.getInetAddress().getHostAddress() + " "
+                                        + clientPort + " disconnected abruptly.\n");
+
                         clientSocket.close();
-                        Server.clientPortsMap.remove(clientSocket);
+                        clientPortsMap.remove(clientSocket);
                         break;
-                    } catch (IOException e) {
-                        e.printStackTrace();
                     }
                 }
             } catch (IOException e) {
@@ -166,15 +168,17 @@ public class Server {
             case "list":
                 int id = 1;
                 System.out.println("\n ID: IP Address       Port No.");
-                System.out.println("DEBUG:CLIENTS");
+                // System.out.println("DEBUG:CLIENTS");
                 // display connected clients
                 for (Socket s : clientPortsMap.keySet()) {
                     displayConnectionDetails(s, id++);
                 }
-                System.out.println("DEBUG:SERVERS");
-                for (Socket s : serverPortsMap.keySet()) {
-                    displayConnectionDetails(s, id++);
-                }
+                /*
+                 * System.out.println("DEBUG:SERVERS");
+                 * for (Socket s : serverPortsMap.keySet()) {
+                 * displayConnectionDetails(s, id++);
+                 * }
+                 */
 
                 System.out.println();
                 break;
@@ -224,22 +228,17 @@ public class Server {
                 break;
 
             case "exit":
-                // terminate connecion for each client and server
-                // TODO: Fix terminate to complete exit
-                /*
-                 * Set<Socket> clientSockets = new HashSet<>(clientPortsMap.keySet());
-                 * for (Socket socket : clientSockets) {
-                 * terminateConnection(socket);
-                 * }
-                 * Set<Socket> serverSockets = new HashSet<>(serverPortsMap.keySet());
-                 * for (Socket socket : serverSockets) {
-                 * terminateConnection(socket);
-                 * }
-                 */
+                List<Socket> clientSocketList = new ArrayList<>(clientPortsMap.keySet());
+                List<Socket> serverSocketList = new ArrayList<>(serverPortsMap.keySet());
+                Socket temp[] = new Socket[2];
+                for (int i = 0; i < clientSocketList.size(); i++) {
+                    temp[0] = clientSocketList.get(i);
+                    temp[1] = serverSocketList.get(i);
+                    terminateConnection(temp);
+                }
 
                 Server.active = false;
                 Server.program = false;
-
                 try {
                     Server.serverSocket.close();
                 } catch (IOException e) {
@@ -399,7 +398,6 @@ public class Server {
 
         String disconnectCmd = "~~disconnect";
         sendMessage(socketToTerminate[1], disconnectCmd);
-
         try {
             socketToTerminate[1].close();
         } catch (IOException e) {
