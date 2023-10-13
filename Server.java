@@ -108,13 +108,11 @@ public class Server {
                                             + clientPort + " disconnected. [DISCONNECT]\n");
 
                             clientSocket.close();
-                            Server.clientPortsMap.remove(clientSocket);
-                            Socket servSocket = findServerSocket(clientSocket, clientListeningPort);
-                            servSocket.close();
-                            Server.serverPortsMap.remove(servSocket);
+                            clientPortsMap.remove(clientSocket);
                             break;
                             //TODO: Why does it throw exception :^(
-                        } else
+                        }
+                        else
                             System.out.println(
                                     "\n  Message received from " + clientSocket.getInetAddress().getHostAddress() + " "
                                             + clientPort + ": " + message + "\n");
@@ -398,14 +396,12 @@ public class Server {
 
         String disconnectCmd = "~~disconnect";
         sendMessage(socketToTerminate[1], disconnectCmd);
-
+        //TODO: Terminate update
         try {
-            socketToTerminate[0].close();
             socketToTerminate[1].close();
         } catch (IOException e) {
             e.printStackTrace();
         } finally {
-            clientPortsMap.remove(socketToTerminate[0]);
             serverPortsMap.remove(socketToTerminate[1]);
         }
     }
