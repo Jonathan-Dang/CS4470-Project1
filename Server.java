@@ -93,8 +93,11 @@ public class Server {
                                             + clientPort + " disconnected.\n");
 
                             Socket servSocket = findServerSocket(clientSocket, clientListeningPort);
-                            servSocket.close();
-                            Server.serverPortsMap.remove(servSocket);
+                            if (servSocket != null)
+                            {
+                                servSocket.close();
+                                Server.serverPortsMap.remove(servSocket);
+                            }
                             clientSocket.close();
                             clientPortsMap.remove(clientSocket);
                             break;
@@ -109,6 +112,9 @@ public class Server {
 
                             clientSocket.close();
                             clientPortsMap.remove(clientSocket);
+                            Socket servSocket = findServerSocket(clientSocket, clientListeningPort);
+                            servSocket.close();
+                            Server.serverPortsMap.remove(servSocket);
                             break;
                             //TODO: Why does it throw exception :^(
                         }
