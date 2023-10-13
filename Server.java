@@ -11,53 +11,61 @@ public class Server {
     private static ConcurrentMap<Socket, Integer> clientPortsMap = new ConcurrentHashMap<>();
     private static ConcurrentMap<Socket, Integer> serverPortsMap = new ConcurrentHashMap<>();
     private static boolean active = true;
+    private static boolean program = true;
     private static int serverPort;
 
     public static void main(String[] args) {
         // The number of command arguments only can be one
-        if (args.length != 1) {
-            System.out.println("\n  Usage: java -cp bin Server <port>\n");
-            System.exit(1);
-        }
-        int port = Integer.parseInt(args[0]);
+        while (program) { // Keeps the program running until a valid port is entered or the user exits
+            if (args.length != 1) {
+                System.out.println("\n  Usage: java -cp bin Server <port>\n");
+                System.exit(1);
+            }
+            int port = Integer.parseInt(args[0]);
 
-        try {
+            try {
 
-            // Scanner for reading user commands
-            Thread userInputThread = new Thread(() -> {
-                Scanner scanner = new Scanner(System.in);
+                // Scanner for reading user commands
+                Thread userInputThread = new Thread(() -> {
+                    Scanner scanner = new Scanner(System.in);
+                    while (Server.active) {
+                        String userInput = scanner.nextLine().trim();
+                        userCommand(userInput);
+                    }
+                    scanner.close();
+                });
+                userInputThread.start();
+
+                // Setting up server and client sockets
+                serverSocket = new ServerSocket(port);
+                serverPort = serverSocket.getLocalPort();
+                System.out.println("\n  Server listen on port " + serverPort + "\n");
+
                 while (Server.active) {
-                    String userInput = scanner.nextLine().trim();
-                    userCommand(userInput);
-                }
-                scanner.close();
-            });
-            userInputThread.start();
+                    try {
+                        Socket clientSocket = serverSocket.accept();
 
-            // Setting up server and client sockets
-            serverSocket = new ServerSocket(port);
-            serverPort = serverSocket.getLocalPort();
-            System.out.println("\n  Server listen on port " + serverPort + "\n");
+                        System.out.println(
+                                "\n  Peer " + clientSocket.getInetAddress().getHostAddress() + " connected.\n");
+                        handleClient(clientSocket);
 
-            while (Server.active) {
-                try {
-                    Socket clientSocket = serverSocket.accept();
-
-                    System.out.println("\n  Peer " + clientSocket.getInetAddress().getHostAddress() + " connected.\n");
-                    handleClient(clientSocket);
-
-                } catch (SocketException e) {
-                    if (!Server.active) {
-                        break;
-                    } else {
-                        e.printStackTrace();
+                    } catch (SocketException e) {
+                        if (!Server.active) {
+                            break;
+                        } else {
+                            e.printStackTrace();
+                        }
                     }
                 }
-            }
 
-            System.out.println("Exiting from Server Socket");
-        } catch (Exception e) {
-            e.printStackTrace();
+                System.out.println("Exiting from Server Socket");
+            } catch (BindException e) {
+                System.out.println("\n Error: Port " + port + " is already in use by another process.");
+                // Clear the args array so the usage message is shown again
+                args = new String[0];
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
         }
 
     }
@@ -87,10 +95,10 @@ public class Server {
                 while (true) {
                     try {
                         bytesRead = input.read(buffer);
-                        // if peer exit without terminating the connection
+                        // if other peer terminated the connection
                         if (bytesRead == -1) {
                             System.out
-                                    .println("\n  Peer " + clientSocket.getInetAddress().getHostAddress() + " "
+                                    .println("\n Peer " + clientSocket.getInetAddress().getHostAddress() + " "
                                             + clientPort + " disconnected.\n");
                             clientSocket.close();
                             clientPortsMap.remove(clientSocket);
@@ -116,12 +124,13 @@ public class Server {
                                     "\n  Message received from " + clientSocket.getInetAddress().getHostAddress() + " "
                                             + clientPort + ": " + message + "\n");
                     } catch (SocketException e) {
-                        // if peer close the program without sending any request
-                        System.out.println(
-                                "\n  Peer " + clientSocket.getInetAddress().getHostAddress() + " "
-                                        + clientPort + " disconnected abruptly.\n");
+                        System.out.println("\n  Peer " + clientSocket.getInetAddress().getHostAddress()
+                                + " " + clientPort + " disconnected abruptly.\n");
+                        Socket servSocket = findServerSocket(clientSocket, clientListeningPort);
+                        servSocket.close();
+                        Server.serverPortsMap.remove(servSocket);
                         clientSocket.close();
-                        clientPortsMap.remove(clientSocket);
+                        Server.clientPortsMap.remove(clientSocket);
                         break;
                     } catch (IOException e) {
                         e.printStackTrace();
@@ -229,6 +238,8 @@ public class Server {
                  */
 
                 Server.active = false;
+                Server.program = false;
+
                 try {
                     Server.serverSocket.close();
                 } catch (IOException e) {
@@ -390,12 +401,10 @@ public class Server {
         sendMessage(socketToTerminate[1], disconnectCmd);
 
         try {
-            socketToTerminate[0].close();
             socketToTerminate[1].close();
         } catch (IOException e) {
             e.printStackTrace();
         } finally {
-            clientPortsMap.remove(socketToTerminate[0]);
             serverPortsMap.remove(socketToTerminate[1]);
         }
     }
