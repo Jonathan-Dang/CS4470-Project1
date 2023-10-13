@@ -116,7 +116,6 @@ public class Server {
                             servSocket.close();
                             Server.serverPortsMap.remove(servSocket);
                             break;
-                            //TODO: Why does it throw exception :^(
                         }
                         else
                             System.out.println(
@@ -163,15 +162,15 @@ public class Server {
             case "list":
                 int id = 1;
                 System.out.println("\n ID: IP Address       Port No.");
-                System.out.println("DEBUG:CLIENTS");
+                //System.out.println("DEBUG:CLIENTS");
                 // display connected clients
                 for (Socket s : clientPortsMap.keySet()) {
                     displayConnectionDetails(s, id++);
                 }
-                System.out.println("DEBUG:SERVERS");
+                /*System.out.println("DEBUG:SERVERS");
                 for (Socket s : serverPortsMap.keySet()) {
                     displayConnectionDetails(s, id++);
-                }
+                }*/
 
                 System.out.println();
                 break;
@@ -221,17 +220,6 @@ public class Server {
                 break;
 
             case "exit":
-                // terminate connecion for each client and server
-                //TODO: Fix terminate to complete exit
-                /*
-                for (Socket socket : clientSockets) {
-                    terminateConnection(socket);
-                }
-                Set<Socket> serverSockets = new HashSet<>(serverPortsMap.keySet());
-                for (Socket socket : serverSockets) {
-                    terminateConnection(socket);
-                }*/
-                
                 List<Socket> clientSocketList = new ArrayList<>(clientPortsMap.keySet());
                 List<Socket> serverSocketList = new ArrayList<>(serverPortsMap.keySet());
                 Socket temp[] = new Socket[2];
@@ -402,7 +390,6 @@ public class Server {
 
         String disconnectCmd = "~~disconnect";
         sendMessage(socketToTerminate[1], disconnectCmd);
-        //TODO: Terminate update
         try {
             socketToTerminate[1].close();
         } catch (IOException e) {
