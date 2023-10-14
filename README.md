@@ -20,11 +20,11 @@ A comprehensive peer-to-peer chat application built for real-time message exchan
 ## Installation and Building the Program
 1. Clone the repository:
     ```bash
-    git clone [Your Repository Link]
+    git clone https://github.com/Jonathan-Dang/CS4470-Project1.git
     ```
 2. Navigate to the project directory:
     ```bash
-    cd [Your Project Directory Name]
+    cd [File Directory Name Name]
     ```
 3. Compile the Java file:
     ```bash
@@ -56,6 +56,7 @@ Additional Information
 ## Contributing
 Steven Wang
 Jonathan Dang
+- Both authors contributed equally to all aspects of the project, including development, testing, and documentation.
 
 ## License
 This project is licensed under the [MIT License](LICENSE).
