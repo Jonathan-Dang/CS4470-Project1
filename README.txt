@@ -55,7 +55,7 @@ Additional Information
 
 ## Contributing
 Steven Wang
-Jonathan Dang
+Jonathan Dang <CIN: 402381587>
 - Both authors contributed equally to all aspects of the project, including development, testing, and documentation.
 
 ## License
