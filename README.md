@@ -24,7 +24,7 @@ A comprehensive peer-to-peer chat application built for real-time message exchan
     ```
 2. Navigate to the project directory:
     ```bash
-    cd [File Directory Name Name]
+    cd [File Directory Name]
     ```
 3. Compile the Java file:
     ```bash
@@ -54,7 +54,7 @@ Additional Information
 - The system maintains separate mappings for client and server ports (clientPortsMap and serverPortsMap), though their distinction is not entirely clear based on the provided snippets. More details about these maps can be found in the codebase.
 
 ## Contributing
-Steven Wang
+Steven Wang 
 Jonathan Dang
 - Both authors contributed equally to all aspects of the project, including development, testing, and documentation.
 
