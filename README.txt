@@ -55,6 +55,7 @@ Additional Information
 
 ## Contributing
 Steven Wang
+Jonathan Dang
 
 ## License
 This project is licensed under the [MIT License](LICENSE).
