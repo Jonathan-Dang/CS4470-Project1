@@ -18,7 +18,7 @@ public class chat {
         // The number of command arguments only can be one
         while (program) { // Keeps the program running until a valid port is entered or the user exits
             if (args.length != 1) {
-                System.out.println("\n  Usage: java -cp bin Server <port>\n");
+                System.out.println("\n  Usage: java Server <port>\n");
                 System.exit(1);
             }
             int port = Integer.parseInt(args[0]);
