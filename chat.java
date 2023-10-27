@@ -16,7 +16,8 @@ public class chat {
 
     public static void main(String[] args) {
         // The number of command arguments only can be one
-        while (program) { // Keeps the program running until a valid port is entered or the user exits
+        // Keeps the program running until a valid port is entered or the user exits
+        while (program) {
             if (args.length != 1) {
                 System.out.println("\n  Usage: java Server <port>\n");
                 System.exit(1);
@@ -41,14 +42,15 @@ public class chat {
                 serverPort = serverSocket.getLocalPort();
                 System.out.println("\n  Server listen on port " + serverPort + "\n");
 
+                // waiting incoming connection
                 while (chat.active) {
                     try {
                         Socket clientSocket = serverSocket.accept();
-
                         System.out.println(
                                 "\n  Peer " + clientSocket.getInetAddress().getHostAddress() + " connected.\n");
-                        handleClient(clientSocket);
 
+                        // handle client connection
+                        handleClient(clientSocket);
                     } catch (SocketException e) {
                         if (!chat.active) {
                             break;
