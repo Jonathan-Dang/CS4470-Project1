@@ -285,6 +285,12 @@ public class chat {
         }
     }
 
+    private static void displayConnectionDetails(Socket s, int id) {
+        String clientIpAddress = s.getInetAddress().getHostAddress();
+        int clientListeningPort = clientPortsMap.getOrDefault(s, serverPortsMap.getOrDefault(s, -1));
+        System.out.printf(" %d: %s       %d%n", id, clientIpAddress, clientListeningPort);
+    }
+
     private static void connectToDestination(String destination, int port) {
         try {
 
@@ -459,11 +465,5 @@ public class chat {
         }
 
         return ret;
-    }
-
-    private static void displayConnectionDetails(Socket s, int id) {
-        String clientIpAddress = s.getInetAddress().getHostAddress();
-        int clientListeningPort = clientPortsMap.getOrDefault(s, serverPortsMap.getOrDefault(s, -1));
-        System.out.printf(" %d: %s       %d%n", id, clientIpAddress, clientListeningPort);
     }
 }
