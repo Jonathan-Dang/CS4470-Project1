@@ -167,6 +167,11 @@ public class chat {
                 }
                 break;
 
+            case "myport":
+                // Display the listen port number
+                System.out.println("\n  The program runs on port number " + chat.serverSocket.getLocalPort() + "\n");
+                break;
+
             case "list":
                 int id = 1;
                 System.out.println("\n ID: IP Address       Port No.");
@@ -183,11 +188,6 @@ public class chat {
                  */
 
                 System.out.println();
-                break;
-
-            case "myport":
-                // Display the listen port number
-                System.out.println("\n  The program runs on port number " + chat.serverSocket.getLocalPort() + "\n");
                 break;
 
             case "connect":
