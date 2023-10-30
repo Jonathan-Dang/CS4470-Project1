@@ -18,7 +18,7 @@ public class chat {
         // The number of command arguments only can be one
         while (program) { // Keeps the program running until a valid port is entered or the user exits
             if (args.length != 1) {
-                System.out.println("\n  Usage: java -cp bin Server <port>\n");
+                System.out.println("\n  Usage: java -cp bin chat <port>\n");
                 System.exit(1);
             }
             int port = Integer.parseInt(args[0]);
@@ -216,10 +216,13 @@ public class chat {
 
             case "send":
                 // Implement connect command
-                if (parts.length == 3) {
+                if (parts.length >= 3) {
                     Socket receiver[] = getSocketFromId(parts[1]);
                     if (receiver != null) {
                         String message = parts[2];
+                        for (int i = 3; i < parts.length; i++)
+                            message += " " + parts[i];
+                        message += '\n';
                         sendMessage(receiver[1], message);
                     }
                 } else {
